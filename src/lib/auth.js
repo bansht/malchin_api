@@ -62,7 +62,8 @@ export const verifyToken = (token) => {
  * @returns {object|null} - User object or null
  */
 export const getUserFromToken = async (req, prisma) => {
-  const authHeader = req.headers.authorization;
+  // Check both lowercase and uppercase Authorization header
+  const authHeader = req.headers.authorization || req.headers.Authorization;
   
   if (!authHeader) {
     return null;
@@ -78,6 +79,7 @@ export const getUserFromToken = async (req, prisma) => {
     
     return user;
   } catch (error) {
+    console.error("Token verification error:", error.message);
     return null;
   }
 };

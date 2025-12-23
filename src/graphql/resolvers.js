@@ -1,12 +1,23 @@
 import { GraphQLError } from "graphql";
-import { getCategories } from "../controllers/category.js";
-import { createProduct, getProducts, updateProduct, getProductById } from "../controllers/product.js";
+import {
+  createCategory,
+  deleteCategory,
+  getCategories,
+  updateCategory,
+} from "../controllers/category.js";
+import {
+  getProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from "../controllers/product.js";
 import prisma from "../lib/prisma.js";
 import {
   hashPassword,
   comparePasswords,
   generateToken,
-  requireAuth
+  requireAuth,
 } from "../lib/auth.js";
 
 const resolvers = {
@@ -14,34 +25,30 @@ const resolvers = {
     users: async () => {
       return await prisma.user.findMany({
         orderBy: {
-          createdAt: 'desc'
-        }
+          createdAt: "desc",
+        },
+        include: {
+          products: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
       });
     },
     user: async (_, { id }) => {
       return await prisma.user.findUnique({
-        where: { id }
+        where: { id },
       });
     },
     getUserProfile: async (_, __, { user }) => {
       requireAuth(user);
       return user;
     },
-    products: async () => {
-      const products = await prisma.product.findMany();
-      return products.map(product => ({
-        ...product,
-        createdAt: product.createdAt.toISOString()
-      }));
-    },
-    product: async (root, { id }) => {
-      const product = await getProductById(id);
-      if (!product) {
-        throwNotFoundError(`${id}-тай бүтээгдэхүүн олдсонгүй`);
-      }
-      return product;
-    },
-     categories: () => getCategories(),
+    products: async () => getProducts(),
+    product: async (_, { id }) => getProductById(id),
+    categories: () => getCategories(),
   },
 
   Mutation: {
@@ -57,7 +64,7 @@ const resolvers = {
       const { name, email, phone, address, password } = input;
 
       const existingUser = await prisma.user.findUnique({
-        where: { email }
+        where: { email },
       });
 
       if (existingUser) {
@@ -93,19 +100,22 @@ const resolvers = {
       const { email, password } = input;
 
       const user = await prisma.user.findUnique({
-        where: { email }
+        where: { email },
       });
 
       if (!user) {
-        throw new GraphQLError("Invalid email or password", {
+        throw new GraphQLError("Нууц үг эсвэл имэйл буруу байна.", {
           extensions: { code: "INVALID_CREDENTIALS" },
         });
       }
 
-      const isValidPassword = await comparePasswords(password, user.passwordHash);
+      const isValidPassword = await comparePasswords(
+        password,
+        user.passwordHash
+      );
 
       if (!isValidPassword) {
-        throw new GraphQLError("Invalid email or password", {
+        throw new GraphQLError("Нууц үг эсвэл имэйл буруу байна.", {
           extensions: { code: "INVALID_CREDENTIALS" },
         });
       }
@@ -121,166 +131,29 @@ const resolvers = {
         },
       };
     },
-    socialAuth: async (_, { email, device = "web" }) => {
-      let user = await prisma.user.findUnique({
-        where: { email }
-      });
 
-      if (!user) {
-        const name = email.split('@')[0];
-
-        user = await prisma.user.create({
-          data: {
-            name,
-            email,
-            passwordHash: '',
-          },
-        });
-      }
-
-      const token = generateToken(user);
-
-      return {
-        token,
-        user: {
-          ...user,
-          createdAt: user.createdAt.toISOString(),
-          updatedAt: user.updatedAt.toISOString(),
-        },
-      };
+    createProduct: async (_, { input }, context) => {
+      return await createProduct(_, { input }, context);
     },
-    createProduct: async (root, { input: { title, description, price, unit, quantity, location, images, status, attributes, categoryId, userId } }, { user }) => {
-      requireAuth(user);
-      
-      if (user.role !== 'admin' && userId !== user.id) {
-        throw new GraphQLError("You can only create products for yourself", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
-      
-      return await prisma.product.create({
-        data: { title, description, price, unit, quantity, location, images, status, attributes, categoryId, userId }
-      })
+    updateProduct: async (_, { id, input }, context) => {
+      return await updateProduct(_, { id, input }, context);
     },
-    createCategory: async (root, { input }, { user }) => {
-      requireAuth(user);
-      
-      if (user.role !== 'admin') {
-        throw new GraphQLError("Only administrators can create categories", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
-      
-      const { name, slug, type, parentId } = input;
+    deleteProduct: async (_, { id }, context) => {
+      return await deleteProduct(_, { id }, context);
+    },
 
-      if (!name || !slug || !type) {
-        throw new GraphQLError("Name, slug, and type are required fields", {
-          extensions: { code: "BAD_USER_INPUT" },
-        });
-      }
+    createCategory: async (_, { input }, { user }) => {
+      return await createCategory(input, user);
+    },
 
-      return await prisma.category.create({
-        data: {
-          name,
-          slug,
-          type,
-          parentId: parentId || null,
-        },
-      });
+    updateCategory: async (_, { id, input }, { user }) => {
+      return await updateCategory(id, input, user);
     },
-    updateProduct: async (root, { input: { id, ...data } }, { user }) => {
-      requireAuth(user);
-      
-      const product = await prisma.product.findUnique({
-        where: { id }
-      });
-      
-      if (!product) {
-        throw new GraphQLError("Product not found", {
-          extensions: { code: "NOT_FOUND" },
-        });
-      }
-      
-      if (user.role !== 'admin' && product.userId !== user.id) {
-        throw new GraphQLError("You can only update your own products", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
-      
-      return await prisma.product.update({
-        where: { id },
-        data
-      });
-    },
-    updateCategory: async (root, { input: { id, ...data } }, { user }) => {
-      requireAuth(user);
-      
-      if (user.role !== 'admin') {
-        throw new GraphQLError("Only administrators can update categories", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
-      
-      return await prisma.category.update({
-        where: { id },
-        data
-      });
-    },
-    deleteProduct: async (root, { id }, { user }) => {
-      requireAuth(user);
-      
-      const product = await prisma.product.findUnique({
-        where: { id }
-      });
-      
-      if (!product) {
-        throw new GraphQLError("Product not found", {
-          extensions: { code: "NOT_FOUND" },
-        });
-      }
-      
-      if (user.role !== 'admin' && product.userId !== user.id) {
-        throw new GraphQLError("You can only delete your own products", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
-      
-      await prisma.product.delete({
-        where: { id }
-      });
-      return true;
-    },
-    deleteCategory: async (root, { id }, { user }) => {
-      requireAuth(user);
-      
-      if (user.role !== 'admin') {
-        throw new GraphQLError("Only administrators can delete categories", {
-          extensions: { code: "FORBIDDEN" },
-        });
-      }
-      
-      const productsCount = await prisma.product.count({
-        where: { categoryId: id }
-      });
 
-      if (productsCount > 0) {
-        throw new GraphQLError(`Cannot delete category. ${productsCount} product(s) are using this category.`, {
-          extensions: { code: "CATEGORY_IN_USE" },
-        });
-      }
-
-      await prisma.category.delete({
-        where: { id }
-      });
-      return true;
-    }
+    deleteCategory: async (_, { id }, { user }) => {
+      return await deleteCategory(id, user);
+    },
   },
 };
 
 export default resolvers;
-
-function throwNotFoundError(message) {
-  throw new GraphQLError(message, {
-    extensions: { code: "NOT_FOUND" },
-  });
-}

@@ -8,6 +8,7 @@ const typeDefs = gql`
     phone: String
     address: String
     role: UserRole!
+    products: [Product]
     createdAt: String!
     updatedAt: String!
   }
@@ -134,6 +135,8 @@ const typeDefs = gql`
     status: ProductStatus
     categoryId: String
     userId: String
+    user: User
+    category: Category
     createdAt: String
     updatedAt: String
   }
