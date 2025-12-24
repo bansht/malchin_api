@@ -136,8 +136,9 @@ const resolvers = {
       return await createCategory(input, user);
     },
 
-    updateCategory: async (_, { id, input }, { user }) => {
-      return await updateCategory(id, input, user);
+    updateCategory: async (_, { input }, { user }) => {
+      const { id, ...data } = input;
+      return await updateCategory(id, data, user);
     },
 
     deleteCategory: async (_, { id }, { user }) => {

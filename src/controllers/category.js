@@ -58,6 +58,12 @@ export const updateCategory = async (id, data, user) => {
     const updated = await prisma.category.update({
       where: { id },
       data,
+      include: {
+        children: true,
+        products: {
+          select: { id: true, title: true },
+        },
+      },
     });
 
     return serializeCategory(updated);
