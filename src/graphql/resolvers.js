@@ -13,6 +13,7 @@ import {
   deleteProduct,
 } from "../controllers/product.js";
 import prisma from "../lib/prisma.js";
+import { getUserById, getUsers } from "../controllers/user.js";
 import {
   hashPassword,
   comparePasswords,
@@ -22,29 +23,18 @@ import {
 
 const resolvers = {
   Query: {
-    users: async () => {
-      return await prisma.user.findMany({
-        orderBy: {
-          createdAt: "desc",
-        },
-        include: {
-          products: {
-            select: {
-              id: true,
-              title: true,
-            },
-          },
-        },
-      });
-    },
-    user: async (_, { id }) => {
-      return await prisma.user.findUnique({
-        where: { id },
-      });
-    },
+    users: async () => getUsers(),
+    user: async (_, { id }) => getUserById(id),
     getUserProfile: async (_, __, { user }) => {
       requireAuth(user);
-      return user;
+      const userProfile = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: {
+          products: true,
+        },
+      });
+      
+      return userProfile;
     },
     products: async () => getProducts(),
     product: async (_, { id }) => getProductById(id),

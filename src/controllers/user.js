@@ -1,21 +1,43 @@
-import prisma from "../lib/prisma";
+import prisma from "../lib/prisma.js";
 import { GraphQLError } from "graphql";
 
-export async function getUsers() {
+export const getUsers = async () => {
   const users = await prisma.user.findMany({
+    orderBy: {
+      createdAt: "desc",
+    },
     include: {
       products: {
         select: {
           id: true,
           title: true,
+          description: true,
+          price: true,
+          createdAt: true,
+          updatedAt: true,
+          images: true,
         },
       },
     },
   });
-  return users;
-}
 
-export async function updateUser(id, data) {
+  return users.map(serializeProduct);
+};
+
+export const getUserById = async (id) => {
+  const user = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!user) {
+    throw new GraphQLError("Хэрэглэгч олдсонгүй", {
+      extensions: { code: "NOT_FOUND" },
+    });
+  }
+  return user;
+};
+
+export const updateUser = async (id, data) => {
   try {
     const user = await prisma.user.update({
       where: { id },
@@ -44,9 +66,9 @@ export async function updateUser(id, data) {
       extensions: { code: "BAD_REQUEST" },
     });
   }
-}
+};
 
-export async function deleteUser(id) {
+export const deleteUser = async (id) => {
   try {
     const productCount = await prisma.product.count({
       where: { userId: id },
@@ -71,4 +93,12 @@ export async function deleteUser(id) {
     console.error(error);
     throw error;
   }
+};
+
+function serializeProduct(product) {
+  return {
+    ...product,
+    createdAt: product.createdAt.toISOString(),
+    updatedAt: product.updatedAt.toISOString(),
+  };
 }
