@@ -5,29 +5,37 @@ import resolvers from "./graphql/resolvers.js";
 import { getUserFromToken, hashPassword } from "./lib/auth.js";
 import prisma from "./lib/prisma.js";
 
+const PORT = process.env.PORT || 4000;
+
 async function startServer() {
   await ensureDefaultAdmin();
 
-  const apolloServer = new ApolloServer({ 
-    typeDefs, 
+  const apolloServer = new ApolloServer({
+    typeDefs,
     resolvers,
+    introspection: true,
   });
 
   const { url } = await startStandaloneServer(apolloServer, {
-    listen: { port: 4000 },
+    listen: { port: PORT },
+
     cors: {
-      origin: ["http://localhost:3000", "http://localhost:3001"],
+      origin: [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://malchinapi-production.up.railway.app",
+      ],
       credentials: true,
     },
+
     context: async ({ req }) => {
       const user = await getUserFromToken(req, prisma);
-      
-      return { 
+      return {
         req,
         user,
-        prisma
+        prisma,
       };
-    }
+    },
   });
 
   console.log(`🚀 GraphQL ажиллаж байна ${url}`);
@@ -39,7 +47,7 @@ async function ensureDefaultAdmin() {
 
   try {
     const existingAdmin = await prisma.user.findUnique({
-      where: { email: adminEmail }
+      where: { email: adminEmail },
     });
 
     if (existingAdmin) {
@@ -55,12 +63,10 @@ async function ensureDefaultAdmin() {
         email: adminEmail,
         passwordHash,
         role: "ADMIN",
-      }
+      },
     });
 
-    console.log("✅ Default admin user created:");
-    console.log(`   Email: ${adminEmail}`);
-    console.log(`   Password: ${adminPassword}`);
+    console.log("✅ Default admin user created");
   } catch (error) {
     console.error("❌ Failed to ensure default admin user", error);
   }
