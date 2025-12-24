@@ -4,11 +4,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-     "postinstall": "prisma generate",
-    "start": "node src/server.js",
+    "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
