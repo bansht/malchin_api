@@ -159,11 +159,11 @@ export const updateProduct = async (_, { input }, context) => {
 };
 
 export const deleteProduct = async (_, { id }, context) => {
-  if (!context.user || context.user.role !== "ADMIN") {
-    throw new GraphQLError("Зөвшөөрөлгүй", {
-      extensions: { code: "FORBIDDEN" },
-    });
-  }
+  // if (!context.user) {
+  //   throw new GraphQLError("Зөвшөөрөлгүй", {
+  //     extensions: { code: "FORBIDDEN" },
+  //   });
+  // }
 
   await prisma.product.delete({ where: { id } });
 
