@@ -9,6 +9,7 @@ const typeDefs = gql`
     address: String
     role: UserRole!
     products: [Product]
+    isVerified: Boolean!
     createdAt: String!
     updatedAt: String!
   }
@@ -27,13 +28,28 @@ const typeDefs = gql`
   input RegisterInput {
     name: String!
     email: String!
-    phone: String
+    phone: String!
     address: String
     password: String!
   }
 
+  input SendOTPInput {
+    phone: String!
+  }
+
+  input VerifyOTPInput {
+    phone: String!
+    otp: String!
+  }
+
+  type OTPResponse {
+    success: Boolean!
+    message: String!
+  }
+
   input LoginInput {
-    email: String!
+    email: String
+    phone: String
     password: String!
   }
 
@@ -48,6 +64,8 @@ const typeDefs = gql`
   }
 
   type Mutation {
+    sendOTP(input: SendOTPInput!): OTPResponse
+    verifyOTP(input: VerifyOTPInput!): OTPResponse
     createUser(name: String!, email: String!): User
     register(input: RegisterInput!): AuthPayload
     login(input: LoginInput!): AuthPayload

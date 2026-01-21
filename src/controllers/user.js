@@ -21,7 +21,7 @@ export const getUsers = async () => {
     },
   });
 
-  return users.map(serializeProduct);
+  return users.map(serializeUser);
 };
 
 export const getUserById = async (id) => {
@@ -95,10 +95,10 @@ export const deleteUser = async (id) => {
   }
 };
 
-function serializeProduct(product) {
+function serializeUser(user) {
   return {
-    ...product,
-    createdAt: product.createdAt.toISOString(),
-    updatedAt: product.updatedAt.toISOString(),
+    ...user,
+    createdAt: user.createdAt.toISOString(),
+    updatedAt: user.updatedAt.toISOString(),
   };
 }

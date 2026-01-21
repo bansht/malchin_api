@@ -45,6 +45,7 @@ export const getCategories = async () => {
         select: { id: true, title: true },
       },
     },
+    
   });
 
   return categories.map(serializeCategory);

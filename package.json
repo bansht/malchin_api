@@ -16,6 +16,7 @@
     "@apollo/server": "^5.2.0",
     "@prisma/client": "^5.20.0",
     "apollo-server-express": "^3.13.0",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.1",
     "cors": "^2.8.5",

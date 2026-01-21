@@ -5,7 +5,7 @@ import resolvers from "./graphql/resolvers.js";
 import { getUserFromToken, hashPassword } from "./lib/auth.js";
 import prisma from "./lib/prisma.js";
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT;
 
 async function startServer() {
   await ensureDefaultAdmin();
@@ -24,6 +24,7 @@ async function startServer() {
         "http://localhost:3000",
         "http://localhost:3001",
         "https://malchinapi-production.up.railway.app",
+        "https://malchin-admin.vercel.app/",
       ],
       credentials: true,
     },
@@ -61,6 +62,7 @@ async function ensureDefaultAdmin() {
       data: {
         name: "Administrator",
         email: adminEmail,
+        phone: 99292327,
         passwordHash,
         role: "ADMIN",
       },
